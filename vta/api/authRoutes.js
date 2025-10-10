@@ -1,6 +1,5 @@
-// vta/authRoutes.js
+/*
 // Handles user signup, confirmation, and login via AWS Cognito
-
 import express from 'express';
 import {
   CognitoIdentityProviderClient,
@@ -18,9 +17,9 @@ const router = express.Router();
 const client = new CognitoIdentityProviderClient({ region: process.env.COGNITO_REGION });
 const { COGNITO_USER_POOL_ID, COGNITO_CLIENT_ID, COGNITO_CLIENT_SECRET } = process.env;
 
-/**
- * Helper to generate Cognito SECRET_HASH if the app client has a secret.
- */
+
+ //Helper to generate Cognito SECRET_HASH if the app client has a secret.
+ 
 function generateSecretHash(username) {
   if (!COGNITO_CLIENT_SECRET) return undefined;
   return crypto.createHmac('SHA256', COGNITO_CLIENT_SECRET)
@@ -28,9 +27,9 @@ function generateSecretHash(username) {
     .digest('base64');
 }
 
-/**
- * User signup (registration)
- */
+
+//User signup (registration)
+
 router.post('/signup', async (req, res) => {
   const { username, password, email } = req.body;
 
@@ -56,9 +55,9 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-/**
- * Confirm user signup (email verification)
- */
+
+//Confirm user signup (email verification)
+
 router.post('/confirm', async (req, res) => {
   const { username, code } = req.body;
 
@@ -81,9 +80,9 @@ router.post('/confirm', async (req, res) => {
   }
 });
 
-/**
- * User login (returns tokens)
- */
+
+//User login (returns tokens)
+
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -113,6 +112,86 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ Login error:', err.message);
+    res.status(400).json({ message: err.message });
+  }
+});
+
+export default router;
+*/
+
+
+
+// vta/api/authRoutes.js
+import express from 'express';
+import { CognitoIdentityProviderClient, SignUpCommand, ConfirmSignUpCommand, InitiateAuthCommand } from '@aws-sdk/client-cognito-identity-provider';
+import dotenv from 'dotenv';
+
+dotenv.config();
+const router = express.Router();
+
+const cognito = new CognitoIdentityProviderClient({ region: process.env.COGNITO_REGION });
+
+// ---------------- SIGNUP ----------------
+router.post('/signup', async (req, res) => {
+  const { username, password, email } = req.body;
+
+  try {
+    const command = new SignUpCommand({
+      ClientId: process.env.COGNITO_CLIENT_ID,
+      Username: username,
+      Password: password,
+      UserAttributes: [{ Name: 'email', Value: email }]
+    });
+
+    await cognito.send(command);
+    res.json({ message: 'Signup successful. Please confirm your email.' });
+  } catch (err) {
+    console.error('❌ Signup error:', err);
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// ---------------- CONFIRM SIGNUP ----------------
+router.post('/confirm', async (req, res) => {
+  const { username, code } = req.body;
+
+  try {
+    const command = new ConfirmSignUpCommand({
+      ClientId: process.env.COGNITO_CLIENT_ID,
+      Username: username,
+      ConfirmationCode: code
+    });
+
+    await cognito.send(command);
+    res.json({ message: 'User confirmed successfully.' });
+  } catch (err) {
+    console.error('❌ Confirmation error:', err);
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// ---------------- LOGIN ----------------
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const command = new InitiateAuthCommand({
+      AuthFlow: 'USER_PASSWORD_AUTH',
+      ClientId: process.env.COGNITO_CLIENT_ID,
+      AuthParameters: {
+        USERNAME: username,
+        PASSWORD: password
+      }
+    });
+
+    const response = await cognito.send(command);
+    res.json({
+      idToken: response.AuthenticationResult.IdToken,
+      accessToken: response.AuthenticationResult.AccessToken,
+      refreshToken: response.AuthenticationResult.RefreshToken
+    });
+  } catch (err) {
+    console.error('❌ Login error:', err);
     res.status(400).json({ message: err.message });
   }
 });
