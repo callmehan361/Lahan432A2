@@ -1,72 +1,74 @@
-// vta/middleware/verifyJwt.js
-// Middleware to verify Cognito JWT tokens for protected routes
+// vta/libs/sqs.js
+// Handles AWS SQS operations for video transcoding jobs (enqueue, receive, delete)
 
-import jwt from 'jsonwebtoken';
-import jwkToPem from 'jwk-to-pem';
-import axios from 'axios';
+import { SQSClient, SendMessageCommand, ReceiveMessageCommand, DeleteMessageCommand } from '@aws-sdk/client-sqs';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-let jwksCache = null;
+// Initialize SQS client
+const sqs = new SQSClient({ region: process.env.AWS_REGION });
+const QueueUrl = process.env.SQS_QUEUE_URL;
 
 /**
- * Fetch and cache Cognito JSON Web Keys (JWKS)
- * @param {string} kid - Key ID from the JWT header
- * @returns {string} PEM-formatted key for signature verification
+ * Enqueue a new video job into SQS.
+ * @param {object} jobData - Job details (jobId, inputKey, outputKey, etc.)
  */
-async function getPem(kid) {
-  if (!jwksCache) {
-    const jwksUrl = process.env.COGNITO_JWKS;
-    try {
-      const res = await axios.get(jwksUrl);
-      jwksCache = res.data;
-    } catch (err) {
-      console.error('❌ Failed to fetch Cognito JWKS:', err);
-      throw new Error('Unable to verify token');
-    }
-  }
-
-  const jwk = jwksCache.keys.find(k => k.kid === kid);
-  if (!jwk) throw new Error('Invalid token key ID');
-  return jwkToPem(jwk);
-}
-
-/**
- * Express middleware to verify Cognito JWT.
- */
-export async function verifyJwt(req, res, next) {
+export async function enqueueJob(jobData) {
   try {
-    const authHeader = req.headers.authorization || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-
-    if (!token) {
-      return res.status(401).json({ message: 'Missing Bearer token' });
-    }
-
-    const decoded = jwt.decode(token, { complete: true });
-    if (!decoded || !decoded.header.kid) {
-      return res.status(401).json({ message: 'Invalid token structure' });
-    }
-
-    const pem = await getPem(decoded.header.kid);
-    const payload = jwt.verify(token, pem, { algorithms: ['RS256'] });
-
-    // Optionally validate issuer and audience
-    const expectedIssuer = `https://cognito-idp.${process.env.COGNITO_REGION}.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}`;
-    if (payload.iss !== expectedIssuer) {
-      return res.status(401).json({ message: 'Invalid token issuer' });
-    }
-
-    req.user = {
-      sub: payload.sub,
-      username: payload['cognito:username'],
-      email: payload.email
+    const params = {
+      QueueUrl,
+      MessageBody: JSON.stringify(jobData),
     };
 
-    next();
+    const command = new SendMessageCommand(params);
+    const response = await sqs.send(command);
+
+    console.log('✅ Job enqueued to SQS:', response.MessageId);
+    return response;
   } catch (err) {
-    console.error('❌ JWT verification failed:', err.message);
-    return res.status(401).json({ message: 'Invalid or expired token', error: err.message });
+    console.error('❌ Failed to enqueue SQS message:', err);
+    throw err;
   }
 }
+
+/**
+ * Receive a job from SQS (used by the worker)
+ */
+export async function receiveJob() {
+  try {
+    const command = new ReceiveMessageCommand({
+      QueueUrl,
+      MaxNumberOfMessages: 1,
+      WaitTimeSeconds: 10, // long polling
+    });
+
+    const response = await sqs.send(command);
+    return response.Messages ? response.Messages[0] : null;
+  } catch (err) {
+    console.error('❌ Failed to receive SQS message:', err);
+    throw err;
+  }
+}
+
+/**
+ * Delete a processed job message from SQS
+ * @param {string} receiptHandle - The receipt handle from ReceiveMessage
+ */
+export async function deleteJob(receiptHandle) {
+  try {
+    const command = new DeleteMessageCommand({
+      QueueUrl,
+      ReceiptHandle: receiptHandle,
+    });
+
+    await sqs.send(command);
+    console.log('🗑️ Deleted message from SQS');
+  } catch (err) {
+    console.error('❌ Failed to delete SQS message:', err);
+    throw err;
+  }
+}
+
+// Export the SQS client and Queue URL if needed by other modules
+export { sqs, QueueUrl };
