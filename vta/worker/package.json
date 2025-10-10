@@ -1,0 +1,29 @@
+{
+  "name": "video-transcoder-worker",
+  "version": "1.0.0",
+  "description": "Worker service for video transcoding jobs using FFmpeg, S3, DynamoDB, and SQS.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.674.0",
+    "@aws-sdk/client-sqs": "^3.674.0",
+    "@aws-sdk/lib-storage": "^3.674.0",
+    "@aws-sdk/client-dynamodb": "^3.674.0",
+    "@aws-sdk/lib-dynamodb": "^3.674.0",
+    "dotenv": "^16.4.5",
+    "fluent-ffmpeg": "^2.1.2",
+    "ffmpeg-static": "^5.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "Your Name",
+  "license": "MIT"
+}

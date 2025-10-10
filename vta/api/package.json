@@ -1,0 +1,37 @@
+{
+  "name": "video-transcoder-api",
+  "version": "1.0.0",
+  "description": "Express REST API for video transcoding with AWS S3, DynamoDB, SQS, and Cognito.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.674.0",
+    "@aws-sdk/client-dynamodb": "^3.674.0",
+    "@aws-sdk/client-s3": "^3.674.0",
+    "@aws-sdk/client-sqs": "^3.674.0",
+    "@aws-sdk/lib-dynamodb": "^3.674.0",
+    "@aws-sdk/s3-request-presigner": "^3.674.0",
+    "axios": "^1.7.2",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "ffmpeg-static": "^5.2.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "jwk-to-pem": "^2.0.5",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "Your Name",
+  "license": "MIT"
+}
