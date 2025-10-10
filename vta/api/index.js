@@ -7,10 +7,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Import route modules
-import authRoutes from '../authRoutes.js';
-import uploadRoutes from '../uploadRoutes.js';
-import jobRoutes from '../jobRoutes.js';
-import videoRoutes from '../videoRoutes.js';
+import authRoutes from './authRoutes.js';
+import uploadRoutes from './uploadRoutes.js';
+import jobRoutes from '..jobRoutes.js';
+import videoRoutes from './videoRoutes.js';
 
 
 const app = express();
