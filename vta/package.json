@@ -2,6 +2,22 @@
   "name": "vta",
   "version": "1.0.0",
   "type": "module",
+  "description": "Video Transcoding App",
   "main": "api/index.js",
-  "dependencies": {}
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "uuid": "^9.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "jwk-to-pem": "^2.0.5",
+    "axios": "^1.7.2",
+    "fluent-ffmpeg": "^2.1.2",
+    "ffmpeg-static": "^5.2.0",
+    "@aws-sdk/client-s3": "^3.645.0",
+    "@aws-sdk/client-sqs": "^3.645.0",
+    "@aws-sdk/client-dynamodb": "^3.645.0",
+    "@aws-sdk/lib-dynamodb": "^3.645.0",
+    "@aws-sdk/s3-request-presigner": "^3.645.0"
+  }
 }
