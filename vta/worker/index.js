@@ -345,9 +345,9 @@ async function initConfig() {
     outputPrefix,
     secretValues
   ] = await Promise.all([
-    getParameter("/lahana2/S3_BUCKET"),
-    getParameter("/lahana2/S3_UPLOAD_PREFIX"),
-    getParameter("/lahana2/S3_OUTPUT_PREFIX"),
+    getParameter("/lahana2/s3bucket"),
+    getParameter("/lahana2/s3upload"),
+    getParameter("/lahana2/s3output"),
     getSecret("lahana2secret")
   ]);
 
