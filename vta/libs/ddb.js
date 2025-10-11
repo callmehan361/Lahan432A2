@@ -62,19 +62,24 @@ export async function getItem(jobId) {
  * @param {string} expr - DynamoDB update expression
  * @param {Object} values - ExpressionAttributeValues
  */
+// Update job status or outputs safely
 export async function updateItem(jobId, expr, values, names = {}) {
   try {
-    return await ddb.send(
-      new UpdateCommand({
-        TableName,
-        Key: { id: jobId },
-        UpdateExpression: expr,
-        ExpressionAttributeValues: values,
-        ExpressionAttributeNames: names
-      })
-    );
+    const params = {
+      TableName,
+      Key: { id: jobId }, // match your table's key name
+      UpdateExpression: expr,
+      ExpressionAttributeValues: values,
+    };
+
+    // only add ExpressionAttributeNames if provided
+    if (Object.keys(names).length > 0) {
+      params.ExpressionAttributeNames = names;
+    }
+
+    return await ddb.send(new UpdateCommand(params));
   } catch (err) {
-    console.error('❌ DynamoDB updateItem error:', err);
+    console.error("DynamoDB updateItem error:", err);
     throw err;
   }
 }
