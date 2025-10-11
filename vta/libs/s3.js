@@ -82,7 +82,7 @@ async function loadS3Params() {
   S3_UPLOAD_PREFIX = await getParameter("/lahana2/s3upload");
   S3_OUTPUT_PREFIX = await getParameter("/lahana2/s3output");
 
-  console.log("✅ S3 parameters loaded from Parameter Store:", {
+  console.log(" S3 parameters loaded from Parameter Store:", {
     Bucket,
     S3_UPLOAD_PREFIX,
     S3_OUTPUT_PREFIX,
