@@ -117,6 +117,7 @@ router.post('/', verifyJwt, async (req, res) => {
     const outputKey = `${process.env.S3_OUTPUT_PREFIX}${jobId}.${targetFormat}`;
 
     const item = {
+      id: jobId,
       jobId,
       userSub,
       inputKey,
