@@ -62,7 +62,7 @@ export async function getItem(jobId) {
  * @param {string} expr - DynamoDB update expression
  * @param {Object} values - ExpressionAttributeValues
  */
-export async function updateItem(jobId, expr, values) {
+export async function updateItem(jobId, expr, values, names = {}) {
   try {
     return await ddb.send(
       new UpdateCommand({
@@ -70,14 +70,15 @@ export async function updateItem(jobId, expr, values) {
         Key: { id: jobId },
         UpdateExpression: expr,
         ExpressionAttributeValues: values,
-        ExpressionAttributeNames: { '#s': 'status' }
+        ExpressionAttributeNames: names
       })
     );
   } catch (err) {
-    console.error(' DynamoDB updateItem error:', err);
+    console.error('❌ DynamoDB updateItem error:', err);
     throw err;
   }
 }
+
 
 /**
  * Query all jobs created by a specific user (via Cognito sub)

@@ -172,7 +172,12 @@ const sqs = new SQSClient({ region: REGION });
 async function convert(jobId, inputKey, targetFormat) {
   console.log(` Starting job ${jobId} → ${targetFormat}`);
 
-  await updateItem(jobId, 'SET #s = :s', { ':s': 'PROCESSING', '#s': 'status' });
+await updateItem(
+  jobId,
+  'SET #s = :s',
+  { ':s': 'PROCESSING' },
+  { '#s': 'status' }
+);
 
   const input = await s3.send(new GetObjectCommand({ Bucket, Key: inputKey }));
   const inputStream = input.Body;
@@ -228,17 +233,20 @@ async function convert(jobId, inputKey, targetFormat) {
   });
 
   await updateItem(
-    jobId,
-    'SET #s = :s, #o = :o, #u = :u',
-    {
-      ':s': 'COMPLETED',
-      ':o': outKey,
-      ':u': Date.now(),
-      '#s': 'status',
-      '#o': 'outputKey',
-      '#u': 'updatedAt'
-    }
-  );
+  jobId,
+  'SET #s = :s, #o = :o, #u = :u',
+  {
+    ':s': 'COMPLETED',
+    ':o': outKey,
+    ':u': Date.now()
+  },
+  {
+    '#s': 'status',
+    '#o': 'outputKey',
+    '#u': 'updatedAt'
+  }
+);
+
 
   console.log(` Job ${jobId} completed → ${targetFormat}`);
 }
@@ -272,11 +280,18 @@ async function loop() {
         console.log(` Deleted message for job ${body.jobId}`);
       } catch (err) {
         console.error(` Conversion failed for job ${body.jobId}: ${err.message}`);
-        await updateItem(jobId, 'SET #s = :s, error = :e', {
-          ':s': 'FAILED',
-          ':e': err.message,
-          '#s': 'status'
-        });
+        await updateItem(
+          body.jobId,
+          'SET #s = :s, #e = :e',
+          {
+            ':s': 'FAILED',
+            ':e': err.message
+          },
+          {
+            '#s': 'status',
+            '#e': 'error'
+          }
+        );
       }
     } catch (err) {
       console.error(' SQS receive error:', err.message);
