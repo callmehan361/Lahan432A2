@@ -311,9 +311,6 @@ loop().catch(err => {
 });
 */ //wibviwbwovn3onrve3owvn3we
 
-// vta/worker/index.js
-// Worker: fetches SQS jobs, downloads video from S3, transcodes locally, uploads result.
-
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -321,8 +318,16 @@ import fs from "fs";
 import path from "path";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
-import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
-import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand } from "@aws-sdk/client-sqs";
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand
+} from "@aws-sdk/client-s3";
+import {
+  SQSClient,
+  ReceiveMessageCommand,
+  DeleteMessageCommand
+} from "@aws-sdk/client-sqs";
 import { REGION } from "../libs/aws.js";
 import { updateItem } from "../libs/ddb.js";
 import { QueueUrl } from "../libs/sqs.js";
@@ -332,7 +337,9 @@ const s3 = new S3Client({ region: REGION });
 const sqs = new SQSClient({ region: REGION });
 const Bucket = process.env.S3_BUCKET;
 
-// Download S3 object to local /tmp path
+// --------------------
+// S3 Download Helper
+// --------------------
 async function downloadFromS3(Key, localPath) {
   const data = await s3.send(new GetObjectCommand({ Bucket, Key }));
   return new Promise((resolve, reject) => {
@@ -343,7 +350,9 @@ async function downloadFromS3(Key, localPath) {
   });
 }
 
-// Upload local file back to S3
+// --------------------
+// S3 Upload Helper
+// --------------------
 async function uploadToS3(Key, filePath, contentType) {
   const fileStream = fs.createReadStream(filePath);
   await s3.send(
@@ -357,57 +366,67 @@ async function uploadToS3(Key, filePath, contentType) {
   console.log(` Uploaded ${Key} to S3`);
 }
 
-// Transcode one job
+// --------------------
+// Transcode Logic
+// --------------------
 async function transcode(jobId, inputKey, targetFormat) {
   const tmpInput = `/tmp/${jobId}-input`;
   const tmpOutput = `/tmp/${jobId}-output.${targetFormat}`;
   const outKey = `${process.env.S3_OUTPUT_PREFIX}${jobId}.${targetFormat}`;
 
-  console.log(` Starting job ${jobId}: ${inputKey} → ${targetFormat}`);
+  console.log(`🎬 Starting job ${jobId}: ${inputKey} → ${targetFormat}`);
 
   try {
-    await updateItem(jobId, "SET #s = :s", { ":s": "PROCESSING", "#s": "status" });
+    // Update to PROCESSING
+    await updateItem(jobId, "SET #s = :s", { ":s": "PROCESSING" }, { "#s": "status" });
 
-    //  Download from S3
+    // Download from S3
     await downloadFromS3(inputKey, tmpInput);
     console.log(" Input video downloaded");
 
-    //  Transcode
+    // Transcode using FFmpeg
     await new Promise((resolve, reject) => {
       ffmpeg(tmpInput)
         .outputOptions("-movflags", "faststart")
         .videoCodec("libx264")
         .audioCodec("aac")
+        .format(targetFormat)
         .output(tmpOutput)
         .on("end", resolve)
-        .on("error", reject)
+        .on("error", (err) => reject(new Error(`FFmpeg error: ${err.message}`)))
         .run();
     });
+
     console.log(" Transcoding complete");
 
-    //  Upload to S3
+    // Upload output file to S3
     await uploadToS3(outKey, tmpOutput, "video/mp4");
 
-    //  Update job status
-    await updateItem(jobId, "SET #s = :s", { ":s": "COMPLETED", "#s": "status" });
-    console.log(`🏁 Job ${jobId} completed`);
+    // Update status to COMPLETED
+    await updateItem(jobId, "SET #s = :s", { ":s": "COMPLETED" }, { "#s": "status" });
 
-    // Cleanup temp files
+    console.log(`🏁 Job ${jobId} completed successfully.`);
+
+    // Clean up
     fs.unlinkSync(tmpInput);
     fs.unlinkSync(tmpOutput);
   } catch (err) {
     console.error(` Conversion failed for job ${jobId}:`, err.message);
-    await updateItem(jobId, "SET #s = :s, error = :e", {
-      ":s": "FAILED",
-      ":e": err.message,
-      "#s": "status",
-    });
+    await updateItem(
+      jobId,
+      "SET #s = :s, error = :e",
+      { ":s": "FAILED", ":e": err.message },
+      { "#s": "status" }
+    );
   }
 }
 
-// Main polling loop
+// --------------------
+// Worker Polling Loop
+// --------------------
 async function loop() {
   console.log(" Worker started. Listening for SQS messages...");
+
   while (true) {
     try {
       const resp = await sqs.send(
@@ -424,7 +443,13 @@ async function loop() {
       const { jobId, inputKey, targetFormat } = JSON.parse(msg.Body);
       await transcode(jobId, inputKey, targetFormat);
 
-      await sqs.send(new DeleteMessageCommand({ QueueUrl, ReceiptHandle: msg.ReceiptHandle }));
+      await sqs.send(
+        new DeleteMessageCommand({
+          QueueUrl,
+          ReceiptHandle: msg.ReceiptHandle,
+        })
+      );
+
       console.log(` Message deleted for job ${jobId}`);
     } catch (err) {
       console.error(" Worker loop error:", err.message);
@@ -434,5 +459,3 @@ async function loop() {
 }
 
 loop().catch((err) => console.error(" Worker crashed:", err));
-
-
