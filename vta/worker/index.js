@@ -330,7 +330,7 @@ import {
 import { REGION } from "../libs/aws.js";
 import { updateItem } from "../libs/ddb.js";
 import { QueueUrl } from "../libs/sqs.js";
-import { getParameter } from "../libs/parameters.js";
+import { getParameter } from "../libs/params.js";
 import { getSecret } from "../libs/secrets.js";
 
 // Initialize FFmpeg
