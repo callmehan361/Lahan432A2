@@ -362,7 +362,7 @@ async function uploadToS3(Key, filePath, contentType) {
       ContentType: contentType
     })
   );
-  console.log(`✅ Uploaded ${Key} to S3`);
+  console.log(` Uploaded ${Key} to S3`);
 }
 
 // -----------------------------
@@ -373,7 +373,7 @@ async function transcode(jobId, inputKey, targetFormat) {
   const tmpOutput = `/tmp/${jobId}-output.${targetFormat}`;
   const outKey = `${process.env.S3_OUTPUT_PREFIX}${jobId}.${targetFormat}`;
 
-  console.log(`🎬 Starting job ${jobId}: ${inputKey} → ${targetFormat}`);
+  console.log(` Starting job ${jobId}: ${inputKey} → ${targetFormat}`);
 
   try {
     // Update to PROCESSING
@@ -386,7 +386,7 @@ async function transcode(jobId, inputKey, targetFormat) {
 
     // Download from S3
     await downloadFromS3(inputKey, tmpInput);
-    console.log("📥 Input video downloaded");
+    console.log(" Input video downloaded");
 
     // Transcode using FFmpeg
     await new Promise((resolve, reject) => {
@@ -401,7 +401,7 @@ async function transcode(jobId, inputKey, targetFormat) {
         .run();
     });
 
-    console.log("🎞️ Transcoding complete");
+    console.log(" Transcoding complete");
 
     // Upload to S3
     await uploadToS3(outKey, tmpOutput, "video/mp4");
@@ -414,13 +414,13 @@ async function transcode(jobId, inputKey, targetFormat) {
       { "#s": "status" }
     );
 
-    console.log(`🏁 Job ${jobId} completed successfully`);
+    console.log(` Job ${jobId} completed successfully`);
 
     // Cleanup
     fs.unlinkSync(tmpInput);
     fs.unlinkSync(tmpOutput);
   } catch (err) {
-    console.error(`❌ Conversion failed for job ${jobId}:`, err.message);
+    console.error(` Conversion failed for job ${jobId}:`, err.message);
 
     await updateItem(
       jobId,
@@ -435,7 +435,7 @@ async function transcode(jobId, inputKey, targetFormat) {
 // Worker SQS polling loop
 // -----------------------------
 async function loop() {
-  console.log("🚀 Worker started. Listening for SQS messages...");
+  console.log(" Worker started. Listening for SQS messages...");
 
   while (true) {
     try {
@@ -460,12 +460,12 @@ async function loop() {
         })
       );
 
-      console.log(`🗑️ Message deleted for job ${jobId}`);
+      console.log(` Message deleted for job ${jobId}`);
     } catch (err) {
-      console.error("⚠️ Worker loop error:", err.message);
+      console.error(" Worker loop error:", err.message);
       await new Promise((r) => setTimeout(r, 5000));
     }
   }
 }
 
-loop().catch((err) => console.error("💥 Worker crashed:", err));
+loop().catch((err) => console.error(" Worker crashed:", err));

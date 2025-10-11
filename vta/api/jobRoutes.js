@@ -142,5 +142,25 @@ router.post('/', verifyJwt, async (req, res) => {
   }
 });
 
+
+router.get('/:jobId', verifyJwt, async (req, res) => {
+  try {
+    const jobId = req.params.jobId;
+    if (!jobId) return res.status(400).json({ message: 'Missing jobId' });
+
+    const result = await getItem(jobId);
+    const job = result.Item;
+
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+    if (job.userSub !== req.user.sub) return res.status(403).json({ message: 'Access denied' });
+
+    res.json(job);
+  } catch (err) {
+    console.error(' Error fetching job:', err.message);
+    res.status(500).json({ message: 'Failed to fetch job', error: err.message });
+  }
+});
+
+
 export default router;
 
