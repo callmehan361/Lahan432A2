@@ -19,7 +19,13 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' })); // handle large video metadata payloads
 
 // Health check route
-// app.get('/health', (req, res) => res.json({ ok: true, message: 'API is healthy ' }));
+app.get("/", (req, res) => {
+  res.json({
+    message: "✅ Video Transcoder API is live and reachable via Route 53",
+    domain: "lahana2route.cab432.com",
+    time: new Date().toISOString(),
+  });
+});
 
 // Route bindings
 app.use('/auth', authRoutes);
