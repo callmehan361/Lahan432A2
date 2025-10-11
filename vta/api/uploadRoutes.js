@@ -5,6 +5,7 @@ import express from 'express';
 import { v4 as uuid } from 'uuid';
 import { presignUpload } from '../libs/s3.js';
 import { verifyJwt } from './middleware/verifyJwt.js';
+import path from 'path';
 
 const router = express.Router();
 
@@ -21,7 +22,9 @@ router.post('/presign', verifyJwt, async (req, res) => {
     }
 
     // Create unique S3 key
-    const key = `${process.env.S3_UPLOAD_PREFIX}${uuid()}-${filename}`;
+    const cleanName = path.basename(filename); // removes any 'uploads/' or folder parts
+    const prefix = process.env.S3_UPLOAD_PREFIX || "";
+    const key = `${prefix}${uuid()}-${cleanName}`;
 
     // Generate presigned PUT URL
     const { url } = await presignUpload(key, contentType);

@@ -21,7 +21,7 @@ app.use(express.json({ limit: '50mb' })); // handle large video metadata payload
 // Health check route
 app.get("/", (req, res) => {
   res.json({
-    message: "✅ Video Transcoder API is live and reachable via Route 53",
+    message: " Video Transcoder API is live and reachable via Route 53",
     domain: "lahana2route.cab432.com",
     time: new Date().toISOString(),
   });
