@@ -1,3 +1,5 @@
+/* //wuvrowvnwovnw3onrve3owvn3we
+
 // vta/jobRoutes.js
 // Handles creation and retrieval of video transcoding jobs
 
@@ -12,7 +14,9 @@ const router = express.Router();
 /**
  * POST /jobs
  * Create a new video transcoding job
- */
+ */ //wuvrowvnwovnw3onrve3owvn3we
+
+ /*
 router.post('/', verifyJwt, async (req, res) => {
   try {
     const { inputKey, outputs = ['mp4_720p'], title, description } = req.body;
@@ -57,7 +61,9 @@ router.post('/', verifyJwt, async (req, res) => {
 /**
  * GET /jobs/:jobId
  * Retrieve job details and current status
- */
+ */ //wuvrowvnwovnw3onrve3owvn3we
+
+ /*
 router.get('/:jobId', verifyJwt, async (req, res) => {
   try {
     const jobId = req.params.jobId;
@@ -77,3 +83,63 @@ router.get('/:jobId', verifyJwt, async (req, res) => {
 });
 
 export default router;
+
+*/ //wuvrowvnwovnw3onrve3owvn3we
+
+
+
+// vta/jobRoutes.js
+// Simple job creation for single-format conversion
+
+import express from 'express';
+import { v4 as uuid } from 'uuid';
+import { putItem } from '../libs/ddb.js';
+import { enqueueJob } from '../libs/sqs.js';
+import { verifyJwt } from './middleware/verifyJwt.js';
+
+const router = express.Router();
+
+/**
+ * POST /jobs
+ * Create a single-format conversion job (e.g., mp4 → mov)
+ */
+router.post('/', verifyJwt, async (req, res) => {
+  try {
+    const { inputKey, targetFormat } = req.body;
+    if (!inputKey || !targetFormat) {
+      return res.status(400).json({ message: 'Missing inputKey or targetFormat' });
+    }
+
+    const jobId = uuid();
+    const now = Date.now();
+    const userSub = req.user.sub;
+
+    const outputKey = `${process.env.S3_OUTPUT_PREFIX}${jobId}.${targetFormat}`;
+
+    const item = {
+      jobId,
+      userSub,
+      inputKey,
+      outputFormat: targetFormat,
+      outputKey,
+      status: 'QUEUED',
+      createdAt: now,
+      updatedAt: now
+    };
+
+    // Store job in DynamoDB
+    await putItem(item);
+
+    // Send job to SQS
+    await enqueueJob({ jobId, inputKey, targetFormat });
+
+    console.log(` Job ${jobId} queued for ${targetFormat} conversion`);
+    res.json({ jobId, status: 'QUEUED', targetFormat, outputKey });
+  } catch (err) {
+    console.error(' Error creating job:', err.message);
+    res.status(500).json({ message: 'Failed to create job', error: err.message });
+  }
+});
+
+export default router;
+
