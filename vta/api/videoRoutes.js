@@ -25,7 +25,7 @@ router.get('/', verifyJwt, async (req, res) => {
 
     res.json(videos);
   } catch (err) {
-    console.error('❌ Error fetching user videos:', err.message);
+    console.error(' Error fetching user videos:', err.message);
     res.status(500).json({
       message: 'Failed to fetch user videos',
       error: err.message

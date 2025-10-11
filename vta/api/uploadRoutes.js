@@ -26,10 +26,10 @@ router.post('/presign', verifyJwt, async (req, res) => {
     // Generate presigned PUT URL
     const { url } = await presignUpload(key, contentType);
 
-    console.log(`🪣 Generated presigned URL for: ${key}`);
+    console.log(` Generated presigned URL for: ${key}`);
     res.json({ url, key });
   } catch (err) {
-    console.error('❌ Error generating presigned URL:', err.message);
+    console.error(' Error generating presigned URL:', err.message);
     res.status(500).json({ message: 'Failed to generate presigned URL', error: err.message });
   }
 });

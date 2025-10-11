@@ -46,10 +46,10 @@ router.post('/', verifyJwt, async (req, res) => {
     // Send job message to SQS for the worker
     await enqueueJob({ jobId, inputKey, outputs });
 
-    console.log(`✅ Job ${jobId} queued for processing`);
+    console.log(` Job ${jobId} queued for processing`);
     res.json({ jobId, status: 'QUEUED', outputs: outputItems });
   } catch (err) {
-    console.error('❌ Error creating job:', err.message);
+    console.error(' Error creating job:', err.message);
     res.status(500).json({ message: 'Failed to create job', error: err.message });
   }
 });
@@ -71,7 +71,7 @@ router.get('/:jobId', verifyJwt, async (req, res) => {
 
     res.json(job);
   } catch (err) {
-    console.error('❌ Error fetching job:', err.message);
+    console.error(' Error fetching job:', err.message);
     res.status(500).json({ message: 'Failed to fetch job', error: err.message });
   }
 });

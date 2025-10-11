@@ -25,9 +25,9 @@ export default function App() {
       const { idToken } = await login(username, password);
       setToken(idToken);
       setUser(username);
-      alert('✅ Login successful');
+      alert(' Login successful');
     } catch (err) {
-      alert('❌ Login failed: ' + err.message);
+      alert(' Login failed: ' + err.message);
     }
   }
 
@@ -70,7 +70,7 @@ export default function App() {
         }
       }, 3000);
     } catch (err) {
-      console.error('❌ Upload error:', err);
+      console.error(' Upload error:', err);
       alert('Upload failed: ' + err.message);
       setLoading(false);
     }
@@ -83,7 +83,7 @@ export default function App() {
       fontFamily: 'Arial, sans-serif',
       padding: '20px'
     }}>
-      <h1>🎞️ Video Transcoder</h1>
+      <h1> Video Transcoder</h1>
 
       {!token && (
         <form onSubmit={doLogin} style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
@@ -95,7 +95,7 @@ export default function App() {
 
       {token && (
         <>
-          <p>👋 Logged in as <b>{user}</b></p>
+          <p> Logged in as <b>{user}</b></p>
           <form onSubmit={uploadAndStart}>
             <input id="file" type="file" accept="video/*" required />
             <button type="submit" disabled={loading}>Upload & Start</button>
@@ -113,7 +113,7 @@ export default function App() {
 
       <hr style={{ margin: '30px 0' }} />
 
-      <h2>📺 My Videos</h2>
+      <h2> My Videos</h2>
       {!videos.length && <p>No videos uploaded yet.</p>}
 
       <ul style={{ paddingLeft: '20px' }}>
@@ -129,7 +129,7 @@ export default function App() {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      ▶️ View {o.format}
+                       View {o.format}
                     </a>
                   </div>
                 ))}

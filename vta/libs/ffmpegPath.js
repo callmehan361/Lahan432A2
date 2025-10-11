@@ -8,9 +8,9 @@ import ffmpegPath from 'ffmpeg-static';
 export function setFfmpegPath() {
   if (ffmpegPath) {
     ffmpeg.setFfmpegPath(ffmpegPath);
-    console.log('✅ FFmpeg path set successfully');
+    console.log(' FFmpeg path set successfully');
   } else {
-    console.warn('⚠️ ffmpeg-static binary not found. Make sure FFmpeg is installed on your system.');
+    console.warn(' ffmpeg-static binary not found. Make sure FFmpeg is installed on your system.');
   }
 }
 

@@ -23,7 +23,7 @@ async function getPem(kid) {
       const res = await axios.get(jwksUrl);
       jwksCache = res.data;
     } catch (err) {
-      console.error('❌ Failed to fetch JWKS:', err.message);
+      console.error(' Failed to fetch JWKS:', err.message);
       throw new Error('Unable to verify token (JWKS fetch failed)');
     }
   }
@@ -72,7 +72,7 @@ export async function verifyJwt(req, res, next) {
 
     next();
   } catch (err) {
-    console.error('❌ JWT verification failed:', err.message);
+    console.error(' JWT verification failed:', err.message);
     res.status(401).json({ message: 'Invalid or expired token', error: err.message });
   }
 }

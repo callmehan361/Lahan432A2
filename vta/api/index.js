@@ -12,7 +12,6 @@ import uploadRoutes from './uploadRoutes.js';
 import jobRoutes from './jobRoutes.js';
 import videoRoutes from './videoRoutes.js';
 
-
 const app = express();
 
 // Middleware setup
@@ -20,7 +19,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' })); // handle large video metadata payloads
 
 // Health check route
-app.get('/health', (req, res) => res.json({ ok: true, message: 'API is healthy 🚀' }));
+// app.get('/health', (req, res) => res.json({ ok: true, message: 'API is healthy ' }));
 
 // Route bindings
 app.use('/auth', authRoutes);
@@ -30,13 +29,13 @@ app.use('/videos', videoRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('❌ Uncaught error:', err);
+  console.error(' Uncaught error:', err);
   res.status(500).json({ message: 'Internal server error', error: err.message });
 });
 
 // Start server
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
-  console.log(`✅ API Server running on port ${port}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(` API Server running on port ${port}`);
+  console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
 });

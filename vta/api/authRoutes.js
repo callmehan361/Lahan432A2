@@ -50,7 +50,7 @@ router.post('/signup', async (req, res) => {
     );
     res.json({ message: 'Signup successful. Check your email for confirmation code.' });
   } catch (err) {
-    console.error('❌ Signup error:', err.message);
+    console.error(' Signup error:', err.message);
     res.status(400).json({ message: err.message });
   }
 });
@@ -75,7 +75,7 @@ router.post('/confirm', async (req, res) => {
     );
     res.json({ message: '✅ User confirmed successfully.' });
   } catch (err) {
-    console.error('❌ Confirmation error:', err.message);
+    console.error(' Confirmation error:', err.message);
     res.status(400).json({ message: err.message });
   }
 });
@@ -111,7 +111,7 @@ router.post('/login', async (req, res) => {
       expiresIn: auth.ExpiresIn
     });
   } catch (err) {
-    console.error('❌ Login error:', err.message);
+    console.error(' Login error:', err.message);
     res.status(400).json({ message: err.message });
   }
 });
@@ -148,7 +148,7 @@ router.post('/signup', async (req, res) => {
     await cognito.send(command);
     res.json({ message: 'Signup successful. Please confirm your email.' });
   } catch (err) {
-    console.error('❌ Signup error:', err);
+    console.error(' Signup error:', err);
     res.status(400).json({ message: err.message });
   }
 });
@@ -169,7 +169,7 @@ router.post('/confirm', async (req, res) => {
     await cognito.send(command);
     res.json({ message: 'User confirmed successfully.' });
   } catch (err) {
-    console.error('❌ Confirmation error:', err);
+    console.error(' Confirmation error:', err);
     res.status(400).json({ message: err.message });
   }
 });
@@ -201,7 +201,7 @@ router.post('/login', async (req, res) => {
       refreshToken: response.AuthenticationResult.RefreshToken
     });
   } catch (err) {
-    console.error('❌ Login error:', err);
+    console.error(' Login error:', err);
     res.status(400).json({ message: err.message });
   }
 });

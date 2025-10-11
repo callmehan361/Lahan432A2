@@ -43,7 +43,7 @@ async function transcode(jobId, inputKey, formats) {
   for (const fmt of formats) {
     const outKey = `${process.env.S3_OUTPUT_PREFIX}${jobId}-${fmt}.mp4`;
 
-    console.log(`⚙️ Transcoding ${inputKey} → ${outKey} (${fmt})`);
+    console.log(` Transcoding ${inputKey} → ${outKey} (${fmt})`);
 
     await new Promise((resolve, reject) => {
       const pass = new PassThrough();
@@ -71,7 +71,7 @@ async function transcode(jobId, inputKey, formats) {
       if (fmt === 'mp4_360p') command.size('?x360').videoBitrate('800k');
 
       command.on('error', err => {
-        console.error(`❌ FFmpeg error on job ${jobId}:`, err.message);
+        console.error(` FFmpeg error on job ${jobId}:`, err.message);
         reject(err);
       });
 
@@ -82,14 +82,14 @@ async function transcode(jobId, inputKey, formats) {
 
   // Update job to COMPLETED
   await updateItem(jobId, 'SET #s = :s', { ':s': 'COMPLETED', '#s': 'status' });
-  console.log(`🏁 Job ${jobId} completed successfully.`);
+  console.log(` Job ${jobId} completed successfully.`);
 }
 
 /**
  * Main SQS polling loop — continuously checks for new messages.
  */
 async function loop() {
-  console.log('🚀 Worker started. Listening for SQS messages...');
+  console.log(' Worker started. Listening for SQS messages...');
 
   while (true) {
     try {
@@ -106,14 +106,14 @@ async function loop() {
       if (!msg) continue;
 
       const body = JSON.parse(msg.Body);
-      console.log(`📥 Received job message: ${body.jobId}`);
+      console.log(` Received job message: ${body.jobId}`);
 
       try {
         await transcode(body.jobId, body.inputKey, body.outputs);
         await sqs.send(new DeleteMessageCommand({ QueueUrl, ReceiptHandle: msg.ReceiptHandle }));
-        console.log(`🗑️ Message deleted for job ${body.jobId}`);
+        console.log(` Message deleted for job ${body.jobId}`);
       } catch (err) {
-        console.error(`❌ Job ${body.jobId} failed:`, err.message);
+        console.error(` Job ${body.jobId} failed:`, err.message);
         await updateItem(body.jobId, 'SET #s = :s, error = :e', {
           ':s': 'FAILED',
           ':e': err.message,
@@ -121,7 +121,7 @@ async function loop() {
         });
       }
     } catch (err) {
-      console.error('⚠️ SQS receive error:', err.message);
+      console.error(' SQS receive error:', err.message);
       await new Promise(r => setTimeout(r, 5000)); // small backoff before retry
     }
   }
@@ -129,6 +129,6 @@ async function loop() {
 
 // Start the loop
 loop().catch(err => {
-  console.error('💥 Worker crashed:', err);
+  console.error(' Worker crashed:', err);
   process.exit(1);
 });

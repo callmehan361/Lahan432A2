@@ -24,10 +24,10 @@ export async function enqueueJob(jobData) {
     const command = new SendMessageCommand(params);
     const response = await sqs.send(command);
 
-    console.log('✅ Job enqueued to SQS:', response.MessageId);
+    console.log(' Job enqueued to SQS:', response.MessageId);
     return response;
   } catch (err) {
-    console.error('❌ Failed to enqueue SQS message:', err);
+    console.error(' Failed to enqueue SQS message:', err);
     throw err;
   }
 }
@@ -46,7 +46,7 @@ export async function receiveJob() {
     const response = await sqs.send(command);
     return response.Messages ? response.Messages[0] : null;
   } catch (err) {
-    console.error('❌ Failed to receive SQS message:', err);
+    console.error(' Failed to receive SQS message:', err);
     throw err;
   }
 }
@@ -63,9 +63,9 @@ export async function deleteJob(receiptHandle) {
     });
 
     await sqs.send(command);
-    console.log('🗑️ Deleted message from SQS');
+    console.log(' Deleted message from SQS');
   } catch (err) {
-    console.error('❌ Failed to delete SQS message:', err);
+    console.error(' Failed to delete SQS message:', err);
     throw err;
   }
 }
