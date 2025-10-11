@@ -330,16 +330,40 @@ import {
 import { REGION } from "../libs/aws.js";
 import { updateItem } from "../libs/ddb.js";
 import { QueueUrl } from "../libs/sqs.js";
+import { getParameter } from "../libs/parameters.js";
+import { getSecret } from "../libs/secrets.js";
 
+// Initialize FFmpeg
 ffmpeg.setFfmpegPath(ffmpegPath);
-const s3 = new S3Client({ region: REGION });
-const sqs = new SQSClient({ region: REGION });
-const Bucket = process.env.S3_BUCKET;
+
+async function initConfig() {
+  console.log("Loading configuration from Parameter Store and Secrets Manager...");
+
+  const [
+    bucket,
+    uploadPrefix,
+    outputPrefix,
+    secretValues
+  ] = await Promise.all([
+    getParameter("/lahana2/S3_BUCKET"),
+    getParameter("/lahana2/S3_UPLOAD_PREFIX"),
+    getParameter("/lahana2/S3_OUTPUT_PREFIX"),
+    getSecret("lahana2secret")
+  ]);
+
+  console.log("Configuration loaded successfully.");
+  return {
+    Bucket: bucket,
+    UploadPrefix: uploadPrefix,
+    OutputPrefix: outputPrefix,
+    Secrets: secretValues
+  };
+}
 
 // -----------------------------
 // Download file from S3
 // -----------------------------
-async function downloadFromS3(Key, localPath) {
+async function downloadFromS3(s3, Bucket, Key, localPath) {
   const data = await s3.send(new GetObjectCommand({ Bucket, Key }));
   return new Promise((resolve, reject) => {
     const fileStream = fs.createWriteStream(localPath);
@@ -352,7 +376,7 @@ async function downloadFromS3(Key, localPath) {
 // -----------------------------
 // Upload file to S3
 // -----------------------------
-async function uploadToS3(Key, filePath, contentType) {
+async function uploadToS3(s3, Bucket, Key, filePath, contentType) {
   const fileStream = fs.createReadStream(filePath);
   await s3.send(
     new PutObjectCommand({
@@ -362,21 +386,21 @@ async function uploadToS3(Key, filePath, contentType) {
       ContentType: contentType
     })
   );
-  console.log(` Uploaded ${Key} to S3`);
+  console.log(`Uploaded ${Key} to S3`);
 }
 
 // -----------------------------
 // Transcode logic
 // -----------------------------
-async function transcode(jobId, inputKey, targetFormat) {
+async function transcode(config, jobId, inputKey, targetFormat) {
+  const s3 = new S3Client({ region: REGION });
   const tmpInput = `/tmp/${jobId}-input`;
   const tmpOutput = `/tmp/${jobId}-output.${targetFormat}`;
-  const outKey = `${process.env.S3_OUTPUT_PREFIX}${jobId}.${targetFormat}`;
+  const outKey = `${config.OutputPrefix}${jobId}.${targetFormat}`;
 
-  console.log(` Starting job ${jobId}: ${inputKey} → ${targetFormat}`);
+  console.log(`Starting job ${jobId}: ${inputKey} → ${targetFormat}`);
 
   try {
-    // Update to PROCESSING
     await updateItem(
       jobId,
       "SET #s = :s",
@@ -384,11 +408,9 @@ async function transcode(jobId, inputKey, targetFormat) {
       { "#s": "status" }
     );
 
-    // Download from S3
-    await downloadFromS3(inputKey, tmpInput);
-    console.log(" Input video downloaded");
+    await downloadFromS3(s3, config.Bucket, inputKey, tmpInput);
+    console.log("Input video downloaded.");
 
-    // Transcode using FFmpeg
     await new Promise((resolve, reject) => {
       ffmpeg(tmpInput)
         .outputOptions("-movflags", "faststart")
@@ -401,12 +423,10 @@ async function transcode(jobId, inputKey, targetFormat) {
         .run();
     });
 
-    console.log(" Transcoding complete");
+    console.log("Transcoding complete.");
 
-    // Upload to S3
-    await uploadToS3(outKey, tmpOutput, "video/mp4");
+    await uploadToS3(s3, config.Bucket, outKey, tmpOutput, "video/mp4");
 
-    // Update to COMPLETED
     await updateItem(
       jobId,
       "SET #s = :s",
@@ -414,28 +434,27 @@ async function transcode(jobId, inputKey, targetFormat) {
       { "#s": "status" }
     );
 
-    console.log(` Job ${jobId} completed successfully`);
-
-    // Cleanup
+    console.log(`Job ${jobId} completed successfully.`);
     fs.unlinkSync(tmpInput);
     fs.unlinkSync(tmpOutput);
   } catch (err) {
-    console.error(` Conversion failed for job ${jobId}:`, err.message);
+    console.error(`Conversion failed for job ${jobId}:`, err.message);
 
     await updateItem(
       jobId,
       "SET #s = :s, #err = :e",
       { ":s": "FAILED", ":e": err.message },
-      { "#s": "status", "#err": "error" } // reserved keyword fix
+      { "#s": "status", "#err": "error" }
     );
   }
 }
 
 // -----------------------------
-// Worker SQS polling loop
+// SQS Polling Loop
 // -----------------------------
-async function loop() {
-  console.log(" Worker started. Listening for SQS messages...");
+async function loop(config) {
+  const sqs = new SQSClient({ region: REGION });
+  console.log("Worker started. Listening for SQS messages...");
 
   while (true) {
     try {
@@ -451,7 +470,7 @@ async function loop() {
       if (!msg) continue;
 
       const { jobId, inputKey, targetFormat } = JSON.parse(msg.Body);
-      await transcode(jobId, inputKey, targetFormat);
+      await transcode(config, jobId, inputKey, targetFormat);
 
       await sqs.send(
         new DeleteMessageCommand({
@@ -460,12 +479,22 @@ async function loop() {
         })
       );
 
-      console.log(` Message deleted for job ${jobId}`);
+      console.log(`Message deleted for job ${jobId}`);
     } catch (err) {
-      console.error(" Worker loop error:", err.message);
+      console.error("Worker loop error:", err.message);
       await new Promise((r) => setTimeout(r, 5000));
     }
   }
 }
 
-loop().catch((err) => console.error(" Worker crashed:", err));
+// -----------------------------
+// Bootstrapping
+// -----------------------------
+(async () => {
+  try {
+    const config = await initConfig();
+    await loop(config);
+  } catch (err) {
+    console.error("Worker crashed:", err.message);
+  }
+})();
