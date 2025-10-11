@@ -24,7 +24,7 @@ export async function presignUpload(key, contentType) {
       Key: key,
       ContentType: contentType
     });
-    const url = await getSignedUrl(s3, command, { expiresIn: 300 }); // 5 minutes
+    const url = await getSignedUrl(s3, command, { expiresIn: 1800 }); // 30 minutes
     return { url, key };
   } catch (err) {
     console.error('Error generating S3 presigned URL:', err);
