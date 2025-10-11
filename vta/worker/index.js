@@ -187,8 +187,8 @@ await updateItem(
   let contentType = 'video/mp4';
 
   if (targetFormat === 'mov') {
-    videoCodec = 'prores_ks';
-    audioCodec = 'pcm_s16le';
+    videoCodec = 'libx264';
+    audioCodec = 'aac';
     contentType = 'video/quicktime';
   } else if (targetFormat === 'mkv') {
     videoCodec = 'libx264';
