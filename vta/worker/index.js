@@ -143,7 +143,7 @@ loop().catch(err => {
 
 
 
-
+/* //wibviwbwovn3onrve3owvn3we
 // vta/worker/index.js
 // Worker: converts uploaded MP4 video into a single other format
 
@@ -168,7 +168,10 @@ const sqs = new SQSClient({ region: REGION });
 
 /**
  * Convert a video to a new format and upload result.
- */
+ */ ////wibviwbwovn3onrve3owvn3we
+
+
+/*
 async function convert(jobId, inputKey, targetFormat) {
   console.log(` Starting job ${jobId} → ${targetFormat}`);
 
@@ -253,7 +256,9 @@ await updateItem(
 
 /**
  * SQS polling loop
- */
+ */ //wibviwbwovn3onrve3owvn3we
+
+/*
 async function loop() {
   console.log(' Worker started. Listening for SQS messages...');
 
@@ -304,4 +309,130 @@ loop().catch(err => {
   console.error(' Worker crashed:', err);
   process.exit(1);
 });
+*/ //wibviwbwovn3onrve3owvn3we
+
+// vta/worker/index.js
+// Worker: fetches SQS jobs, downloads video from S3, transcodes locally, uploads result.
+
+import dotenv from "dotenv";
+dotenv.config();
+
+import fs from "fs";
+import path from "path";
+import ffmpeg from "fluent-ffmpeg";
+import ffmpegPath from "ffmpeg-static";
+import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand } from "@aws-sdk/client-sqs";
+import { REGION } from "../libs/aws.js";
+import { updateItem } from "../libs/ddb.js";
+import { QueueUrl } from "../libs/sqs.js";
+
+ffmpeg.setFfmpegPath(ffmpegPath); // set ffmpeg binary
+const s3 = new S3Client({ region: REGION });
+const sqs = new SQSClient({ region: REGION });
+const Bucket = process.env.S3_BUCKET;
+
+// Download S3 object to local /tmp path
+async function downloadFromS3(Key, localPath) {
+  const data = await s3.send(new GetObjectCommand({ Bucket, Key }));
+  return new Promise((resolve, reject) => {
+    const fileStream = fs.createWriteStream(localPath);
+    data.Body.pipe(fileStream);
+    data.Body.on("error", reject);
+    fileStream.on("finish", resolve);
+  });
+}
+
+// Upload local file back to S3
+async function uploadToS3(Key, filePath, contentType) {
+  const fileStream = fs.createReadStream(filePath);
+  await s3.send(
+    new PutObjectCommand({
+      Bucket,
+      Key,
+      Body: fileStream,
+      ContentType: contentType,
+    })
+  );
+  console.log(` Uploaded ${Key} to S3`);
+}
+
+// Transcode one job
+async function transcode(jobId, inputKey, targetFormat) {
+  const tmpInput = `/tmp/${jobId}-input`;
+  const tmpOutput = `/tmp/${jobId}-output.${targetFormat}`;
+  const outKey = `${process.env.S3_OUTPUT_PREFIX}${jobId}.${targetFormat}`;
+
+  console.log(` Starting job ${jobId}: ${inputKey} → ${targetFormat}`);
+
+  try {
+    await updateItem(jobId, "SET #s = :s", { ":s": "PROCESSING", "#s": "status" });
+
+    //  Download from S3
+    await downloadFromS3(inputKey, tmpInput);
+    console.log(" Input video downloaded");
+
+    //  Transcode
+    await new Promise((resolve, reject) => {
+      ffmpeg(tmpInput)
+        .outputOptions("-movflags", "faststart")
+        .videoCodec("libx264")
+        .audioCodec("aac")
+        .output(tmpOutput)
+        .on("end", resolve)
+        .on("error", reject)
+        .run();
+    });
+    console.log(" Transcoding complete");
+
+    //  Upload to S3
+    await uploadToS3(outKey, tmpOutput, "video/mp4");
+
+    //  Update job status
+    await updateItem(jobId, "SET #s = :s", { ":s": "COMPLETED", "#s": "status" });
+    console.log(`🏁 Job ${jobId} completed`);
+
+    // Cleanup temp files
+    fs.unlinkSync(tmpInput);
+    fs.unlinkSync(tmpOutput);
+  } catch (err) {
+    console.error(` Conversion failed for job ${jobId}:`, err.message);
+    await updateItem(jobId, "SET #s = :s, error = :e", {
+      ":s": "FAILED",
+      ":e": err.message,
+      "#s": "status",
+    });
+  }
+}
+
+// Main polling loop
+async function loop() {
+  console.log(" Worker started. Listening for SQS messages...");
+  while (true) {
+    try {
+      const resp = await sqs.send(
+        new ReceiveMessageCommand({
+          QueueUrl,
+          MaxNumberOfMessages: 1,
+          WaitTimeSeconds: 20,
+        })
+      );
+
+      const msg = resp.Messages?.[0];
+      if (!msg) continue;
+
+      const { jobId, inputKey, targetFormat } = JSON.parse(msg.Body);
+      await transcode(jobId, inputKey, targetFormat);
+
+      await sqs.send(new DeleteMessageCommand({ QueueUrl, ReceiptHandle: msg.ReceiptHandle }));
+      console.log(` Message deleted for job ${jobId}`);
+    } catch (err) {
+      console.error(" Worker loop error:", err.message);
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+  }
+}
+
+loop().catch((err) => console.error(" Worker crashed:", err));
+
 
