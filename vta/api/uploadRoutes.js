@@ -22,9 +22,12 @@ router.post('/presign', verifyJwt, async (req, res) => {
     }
 
     // Create unique S3 key
-    const cleanName = path.basename(filename); // removes any 'uploads/' or folder parts
-    const prefix = process.env.S3_UPLOAD_PREFIX || "";
-    const key = `${prefix}${uuid()}-${cleanName}`;
+    //const cleanName = path.basename(filename); // removes any 'uploads/' or folder parts
+    //const prefix = process.env.S3_UPLOAD_PREFIX || "";
+    //const key = `${prefix}${uuid()}-${cleanName}`;
+
+    const cleanName = path.basename(filename);
+    const key = `${uuid()}-${cleanName}`;
 
     // Generate presigned PUT URL
     const { url } = await presignUpload(key, contentType);
