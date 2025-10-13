@@ -87,7 +87,6 @@ export default router;
 */ //wuvrowvnwovnw3onrve3owvn3we
 
 
-
 // vta/api/jobRoutes.js
 // Handles creation, listing, and retrieval of video transcoding jobs
 
@@ -135,10 +134,15 @@ router.post("/", verifyJwt, async (req, res) => {
     // Send message to SQS for worker
     await enqueueJob({ jobId, inputKey, targetFormat });
 
-    console.log(`Job ${jobId} queued for ${targetFormat} conversion`);
-    res.json({ jobId, status: "QUEUED", targetFormat, outputKey });
+    console.log(`✅ Job ${jobId} queued for ${targetFormat} conversion`);
+    res.json({
+      jobId,
+      status: "QUEUED",
+      targetFormat,
+      outputKey,
+    });
   } catch (err) {
-    console.error("Error creating job:", err);
+    console.error("❌ Error creating job:", err);
     res.status(500).json({ message: "Failed to create job", error: err.message });
   }
 });
@@ -150,14 +154,14 @@ router.post("/", verifyJwt, async (req, res) => {
 router.get("/", verifyJwt, async (req, res) => {
   try {
     const userSub = req.user.sub;
-    const result = await queryByUser(userSub);
+    const jobs = await queryByUser(userSub); // returns Items[] directly
 
     res.json({
-      count: result.Count,
-      jobs: result.Items || [],
+      count: jobs.length,
+      jobs,
     });
   } catch (err) {
-    console.error("Error listing jobs:", err);
+    console.error("❌ Error listing jobs:", err);
     res.status(500).json({ message: "Failed to list jobs", error: err.message });
   }
 });
@@ -171,16 +175,21 @@ router.get("/:jobId", verifyJwt, async (req, res) => {
     const { jobId } = req.params;
     if (!jobId) return res.status(400).json({ message: "Missing jobId" });
 
-    const result = await getItem(jobId);
-    const job = result.Item;
+    const job = await getItem(jobId); // ✅ directly get the job object
 
-    if (!job) return res.status(404).json({ message: "Job not found" });
-    if (job.userSub !== req.user.sub)
+    if (!job) {
+      console.warn(`⚠️ No job found for ID ${jobId}`);
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    if (job.userSub !== req.user.sub) {
+      console.warn(`🚫 Access denied: user ${req.user.sub} tried to access ${jobId}`);
       return res.status(403).json({ message: "Access denied" });
+    }
 
     res.json(job);
   } catch (err) {
-    console.error("Error fetching job:", err);
+    console.error("❌ Error fetching job:", err);
     res.status(500).json({ message: "Failed to fetch job", error: err.message });
   }
 });
