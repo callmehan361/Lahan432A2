@@ -95,6 +95,7 @@ import { v4 as uuid } from "uuid";
 import { putItem, getItem, queryByUser } from "../libs/ddb.js";
 import { enqueueJob } from "../libs/sqs.js";
 import { verifyJwt } from "./middleware/verifyJwt.js";
+import { presignDownload } from "../libs/s3.js"; // add this near top if not imported already
 
 const router = express.Router();
 
@@ -191,6 +192,36 @@ router.get("/:jobId", verifyJwt, async (req, res) => {
   } catch (err) {
     console.error("❌ Error fetching job:", err);
     res.status(500).json({ message: "Failed to fetch job", error: err.message });
+  }
+});
+
+
+/**
+ * GET /jobs/:jobId/download
+ * Generates a temporary download link for the output video
+ */
+router.get("/:jobId/download", verifyJwt, async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    if (!jobId) return res.status(400).json({ message: "Missing jobId" });
+
+    const job = await getItem(jobId);
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (job.userSub !== req.user.sub)
+      return res.status(403).json({ message: "Access denied" });
+    if (job.status !== "COMPLETED")
+      return res.status(400).json({ message: "Job not completed yet" });
+
+    // Generate pre-signed download URL
+    const { url } = await presignDownload(job.outputKey);
+
+    res.json({
+      message: "Temporary download link generated",
+      downloadUrl: url,
+    });
+  } catch (err) {
+    console.error("❌ Error generating download link:", err);
+    res.status(500).json({ message: "Failed to create download link", error: err.message });
   }
 });
 
