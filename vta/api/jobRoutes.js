@@ -88,26 +88,27 @@ export default router;
 
 
 
-// vta/jobRoutes.js
-// Simple job creation for single-format conversion
+// vta/api/jobRoutes.js
+// Handles creation, listing, and retrieval of video transcoding jobs
 
-import express from 'express';
-import { v4 as uuid } from 'uuid';
-import { putItem } from '../libs/ddb.js';
-import { enqueueJob } from '../libs/sqs.js';
-import { verifyJwt } from './middleware/verifyJwt.js';
+import express from "express";
+import { v4 as uuid } from "uuid";
+import { putItem, getItem, queryByUser } from "../libs/ddb.js";
+import { enqueueJob } from "../libs/sqs.js";
+import { verifyJwt } from "./middleware/verifyJwt.js";
 
 const router = express.Router();
 
 /**
  * POST /jobs
- * Create a single-format conversion job (e.g., mp4 → mov)
+ * Create a new transcoding job
  */
-router.post('/', verifyJwt, async (req, res) => {
+router.post("/", verifyJwt, async (req, res) => {
   try {
     const { inputKey, targetFormat } = req.body;
+
     if (!inputKey || !targetFormat) {
-      return res.status(400).json({ message: 'Missing inputKey or targetFormat' });
+      return res.status(400).json({ message: "Missing inputKey or targetFormat" });
     }
 
     const jobId = uuid();
@@ -117,50 +118,71 @@ router.post('/', verifyJwt, async (req, res) => {
     const outputKey = `${process.env.S3_OUTPUT_PREFIX}${jobId}.${targetFormat}`;
 
     const item = {
-      id: jobId,
-      jobId,
-      userSub,
+      id: jobId,             // DynamoDB primary key
+      jobId,                 // API-friendly
+      userSub,               // Cognito user reference
       inputKey,
-      outputFormat: targetFormat,
+      targetFormat,
       outputKey,
-      status: 'QUEUED',
+      status: "QUEUED",
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
 
-    // Store job in DynamoDB
+    // Save to DynamoDB
     await putItem(item);
 
-    // Send job to SQS
+    // Send message to SQS for worker
     await enqueueJob({ jobId, inputKey, targetFormat });
 
-    console.log(` Job ${jobId} queued for ${targetFormat} conversion`);
-    res.json({ jobId, status: 'QUEUED', targetFormat, outputKey });
+    console.log(`Job ${jobId} queued for ${targetFormat} conversion`);
+    res.json({ jobId, status: "QUEUED", targetFormat, outputKey });
   } catch (err) {
-    console.error(' Error creating job:', err.message);
-    res.status(500).json({ message: 'Failed to create job', error: err.message });
+    console.error("Error creating job:", err);
+    res.status(500).json({ message: "Failed to create job", error: err.message });
   }
 });
 
-
-router.get('/:jobId', verifyJwt, async (req, res) => {
+/**
+ * GET /jobs
+ * List all jobs for the authenticated user
+ */
+router.get("/", verifyJwt, async (req, res) => {
   try {
-    const jobId = req.params.jobId;
-    if (!jobId) return res.status(400).json({ message: 'Missing jobId' });
+    const userSub = req.user.sub;
+    const result = await queryByUser(userSub);
+
+    res.json({
+      count: result.Count,
+      jobs: result.Items || [],
+    });
+  } catch (err) {
+    console.error("Error listing jobs:", err);
+    res.status(500).json({ message: "Failed to list jobs", error: err.message });
+  }
+});
+
+/**
+ * GET /jobs/:jobId
+ * Get details for a single job
+ */
+router.get("/:jobId", verifyJwt, async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    if (!jobId) return res.status(400).json({ message: "Missing jobId" });
 
     const result = await getItem(jobId);
     const job = result.Item;
 
-    if (!job) return res.status(404).json({ message: 'Job not found' });
-    if (job.userSub !== req.user.sub) return res.status(403).json({ message: 'Access denied' });
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (job.userSub !== req.user.sub)
+      return res.status(403).json({ message: "Access denied" });
 
     res.json(job);
   } catch (err) {
-    console.error(' Error fetching job:', err.message);
-    res.status(500).json({ message: 'Failed to fetch job', error: err.message });
+    console.error("Error fetching job:", err);
+    res.status(500).json({ message: "Failed to fetch job", error: err.message });
   }
 });
 
-
 export default router;
-
