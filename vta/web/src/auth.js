@@ -1,4 +1,3 @@
-// web/src/auth.js
 // Handles user authentication with the backend (Cognito integration)
 
 /**

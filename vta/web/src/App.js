@@ -1,4 +1,4 @@
-// web/src/App.js
+
 // Main React UI for the Video Transcoder frontend
 
 import { useState } from 'react';

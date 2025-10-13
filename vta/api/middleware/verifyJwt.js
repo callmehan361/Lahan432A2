@@ -1,4 +1,3 @@
-// vta/api/middleware/verifyJwt.js
 // Middleware to verify AWS Cognito JWT tokens for protected API routes
 
 import jwt from 'jsonwebtoken';

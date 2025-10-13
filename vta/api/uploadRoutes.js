@@ -1,4 +1,3 @@
-// vta/uploadRoutes.js
 // Provides a pre-signed S3 upload URL for direct client uploads
 
 import express from 'express';
@@ -22,11 +21,8 @@ router.post('/presign', verifyJwt, async (req, res) => {
     }
 
     // Create unique S3 key
-    //const cleanName = path.basename(filename); // removes any 'uploads/' or folder parts
-    //const prefix = process.env.S3_UPLOAD_PREFIX || "";
-    //const key = `${prefix}${uuid()}-${cleanName}`;
-
-    const cleanName = path.basename(filename);
+    
+    const cleanName = path.basename(filename); // removes any 'uploads/' or folder parts
     const key = `${uuid()}-${cleanName}`;
 
     // Generate presigned PUT URL

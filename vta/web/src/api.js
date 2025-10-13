@@ -1,4 +1,3 @@
-// web/src/api.js
 // Client-side API helper functions for the Video Transcoding App
 
 /**

@@ -1,4 +1,3 @@
-// vta/libs/aws.js
 // Sets up AWS SDK region configuration for the app
 
 import dotenv from 'dotenv';

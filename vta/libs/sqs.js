@@ -1,4 +1,3 @@
-// vta/libs/sqs.js
 // Handles AWS SQS operations for video transcoding jobs (enqueue, receive, delete)
 
 import { SQSClient, SendMessageCommand, ReceiveMessageCommand, DeleteMessageCommand } from '@aws-sdk/client-sqs';

@@ -2,7 +2,6 @@
 // If you need more information about configurations or implementing the sample code, visit the AWS docs:
 // https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/getting-started.html
 
-// vta/libs/secrets.js
 // Securely fetch configuration secrets from AWS Secrets Manager
 
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";

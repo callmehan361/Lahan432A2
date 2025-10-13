@@ -1,4 +1,3 @@
-// vta/videoRoutes.js
 // Returns a list of all video jobs for the authenticated user
 
 import express from 'express';

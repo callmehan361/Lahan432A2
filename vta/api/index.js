@@ -1,4 +1,3 @@
-// vta/api/index.js
 // Main Express API entrypoint for the Video Transcoding App
 
 import express from 'express';

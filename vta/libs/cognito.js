@@ -1,4 +1,3 @@
-// vta/libs/cognito.js
 // Handles user authentication with AWS Cognito
 // Securely loads Cognito credentials from Secrets Manager
 

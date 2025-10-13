@@ -1,4 +1,3 @@
-// vta/libs/ffmpegPath.js
 // Ensures fluent-ffmpeg uses the correct FFmpeg binary path
 
 import ffmpeg from 'fluent-ffmpeg';
