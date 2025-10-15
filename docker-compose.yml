@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  vta-api:
+    build: .
+    container_name: vta-api
+    working_dir: /app/api
+    command: node index.js
+    ports:
+      - "8080:8080"
+    environment:
+      - AWS_REGION=ap-southeast-2
+      - DDB_TABLE=lahana2jobs
+      - SQS_QUEUE_URL=https://sqs.ap-southeast-2.amazonaws.com/901444280953/lahana2sqs
+      - S3_BUCKET=lahana2
+      - S3_UPLOAD_PREFIX=uploads/
+      - S3_OUTPUT_PREFIX=outputs/
+      - NODE_ENV=production
+    volumes:
+      - .:/app
+    restart: always
+
+  vta-worker:
+    build: .
+    container_name: vta-worker
+    working_dir: /app/worker
+    command: node index.js
+    environment:
+      - AWS_REGION=ap-southeast-2
+      - DDB_TABLE=lahana2jobs
+      - SQS_QUEUE_URL=https://sqs.ap-southeast-2.amazonaws.com/901444280953/lahana2sqs
+      - S3_BUCKET=lahana2
+      - S3_UPLOAD_PREFIX=uploads/
+      - S3_OUTPUT_PREFIX=outputs/
+      - NODE_ENV=production
+    volumes:
+      - .:/app
+    restart: always
