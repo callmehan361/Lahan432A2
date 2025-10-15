@@ -1,0 +1,95 @@
+---
+Metadata:
+  AWSToolsMetrics:
+    IaC_Generator: "arn:aws:cloudformation:ap-southeast-2:901444280953:generatedTemplate/de22e9f3-346b-41b0-9e5f-ccb4f5b36939"
+Resources:
+  EC2KeyPairLahanKiliparamban:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::EC2::KeyPair"
+    DeletionPolicy: "Retain"
+    Properties:
+      KeyName: "Lahan.Kiliparamban"
+      KeyType: "rsa"
+      PublicKeyMaterial: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDTxrvxop3p7RniBhH7uTtxvxnXtGdPGFLC9J6qaAdlIC8z4O4ajPKr0IZExBTNCK5Cu0uQKhAfFEFvWmYU7PzvKan/DlFw7BVrEI5RPATCtzNa7UZHuQzcUoGWuDsQFwzp4sKFVl0d+Oqze/7YFhXsbfKeqXHugHtp48yoosj0WLaxJ5rfCMdESfSzCQlwBIeDEBmHJT1pmGAUur0kkbQrkcof6mrx9tYsTeZvjBUOhm04KlbcU0zycTkIq12N/hWU1378Snlj15QdEtUD0uJm4KqKlzbYHvVaKZgoPfHZJT61/PruNv15u97X+9XXaYRZFHGHuj5mlcPxn33OUBVX\
+        \ Lahan.Kiliparamban\n"
+      Tags: []
+  S3BucketLahana2:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: "Retain"
+    Properties:
+      PublicAccessBlockConfiguration:
+        RestrictPublicBuckets: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        BlockPublicAcls: true
+      BucketName: "lahana2"
+      OwnershipControls:
+        Rules:
+        - ObjectOwnership: "BucketOwnerEnforced"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - BucketKeyEnabled: true
+          ServerSideEncryptionByDefault:
+            SSEAlgorithm: "AES256"
+      Tags:
+      - Value: "n11572833@qut.edu.au"
+        Key: "qut-username"
+      - Value: "assessment2"
+        Key: "purpose"
+  SQSQueueLahana2sqs:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::SQS::Queue"
+    DeletionPolicy: "Retain"
+    Properties:
+      SqsManagedSseEnabled: true
+      ReceiveMessageWaitTimeSeconds: 0
+      DelaySeconds: 0
+      MessageRetentionPeriod: 345600
+      MaximumMessageSize: 1048576
+      VisibilityTimeout: 30
+      QueueName: "lahana2sqs"
+      Tags:
+      - Value: "n11572833@qut.edu.au"
+        Key: "qut-username"
+      - Value: "A2"
+        Key: "purpose"
+  SecretsManagerSecret:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::SecretsManager::Secret"
+    DeletionPolicy: "Retain"
+    Properties:
+      ReplicaRegions: []
+      Tags:
+      - Value: "n11572833@qut.edu.au"
+        Key: "qut-username"
+      - Value: "assessment 2"
+        Key: "purpose"
+      Name: "lahana2secret"
+  DynamoDBTableLahana2jobs:
+    UpdateReplacePolicy: "Retain"
+    Type: "AWS::DynamoDB::Table"
+    DeletionPolicy: "Retain"
+    Properties:
+      SSESpecification:
+        SSEEnabled: false
+      TableName: "lahana2jobs"
+      AttributeDefinitions:
+      - AttributeType: "S"
+        AttributeName: "id"
+      BillingMode: "PAY_PER_REQUEST"
+      KeySchema:
+      - KeyType: "HASH"
+        AttributeName: "id"
+      WarmThroughput:
+        ReadUnitsPerSecond: 12000
+        WriteUnitsPerSecond: 4000
+      DeletionProtectionEnabled: false
+      TableClass: "STANDARD"
+      Tags:
+      - Value: "A2"
+        Key: "purpose"
+      - Value: "n11572833@qut.edu.au"
+        Key: "qut-username"
+      TimeToLiveSpecification:
+        Enabled: false
