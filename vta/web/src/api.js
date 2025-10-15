@@ -1,68 +1,19 @@
-// Client-side API helper functions for the Video Transcoding App
+import { getToken } from './auth.js';
 
-/**
- * Get a presigned S3 upload URL for direct upload.
- * @param {string} idToken - Cognito ID token (JWT)
- * @param {string} filename - Name of the file to upload
- * @param {string} contentType - MIME type of the file
- */
-export async function getPresign(idToken, filename, contentType) {
-  const res = await fetch(`${import.meta.env.VITE_API_BASE}/uploads/presign`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${idToken}`
-    },
-    body: JSON.stringify({ filename, contentType })
-  });
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-  if (!res.ok) throw new Error('Failed to get presigned URL');
-  return res.json(); // { url, key }
-}
+export async function apiFetch(path, options = {}) {
+  const token = getToken();
+  const headers = {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    ...options.headers
+  };
 
-/**
- * Create a new transcoding job.
- * @param {string} idToken - Cognito ID token
- * @param {string} inputKey - S3 key of uploaded video
- * @param {string[]} outputs - Array of formats to transcode to
- */
-export async function createJob(idToken, inputKey, outputs) {
-  const res = await fetch(`${import.meta.env.VITE_API_BASE}/jobs`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${idToken}`
-    },
-    body: JSON.stringify({ inputKey, outputs })
-  });
-
-  if (!res.ok) throw new Error('Failed to create job');
-  return res.json(); // { jobId, status, outputs }
-}
-
-/**
- * Get details and status for a specific job.
- * @param {string} idToken - Cognito ID token
- * @param {string} jobId - Job ID to fetch
- */
-export async function getJob(idToken, jobId) {
-  const res = await fetch(`${import.meta.env.VITE_API_BASE}/jobs/${jobId}`, {
-    headers: { Authorization: `Bearer ${idToken}` }
-  });
-
-  if (!res.ok) throw new Error('Failed to fetch job status');
-  return res.json(); // { jobId, status, outputs, ... }
-}
-
-/**
- * List all video jobs belonging to the user.
- * @param {string} idToken - Cognito ID token
- */
-export async function listVideos(idToken) {
-  const res = await fetch(`${import.meta.env.VITE_API_BASE}/videos`, {
-    headers: { Authorization: `Bearer ${idToken}` }
-  });
-
-  if (!res.ok) throw new Error('Failed to fetch videos');
-  return res.json(); // Array of video job objects
+  const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  if (!response.ok) {
+    const msg = await response.text();
+    throw new Error(`API error: ${response.status} - ${msg}`);
+  }
+  return response.json();
 }

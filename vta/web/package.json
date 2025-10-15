@@ -1,25 +1,16 @@
 {
-  "name": "video-transcoder-web",
+  "name": "vta-web",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
-  "description": "React + Vite web client for AWS-based video transcoding app",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "amazon-cognito-identity-js": "^6.3.2"
   },
   "devDependencies": {
-    "vite": "^5.4.0",
-    "@vitejs/plugin-react": "^4.2.0"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "author": "Your Name",
-  "license": "MIT"
+    "vite": "^5.4.3"
+  }
 }

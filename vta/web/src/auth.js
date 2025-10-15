@@ -1,63 +1,32 @@
-// Handles user authentication with the backend (Cognito integration)
+import { CognitoUserPool, CognitoUser, AuthenticationDetails } from 'amazon-cognito-identity-js';
 
-/**
- * Login user and return Cognito tokens.
- * @param {string} username - Cognito username
- * @param {string} password - Cognito password
- * @returns {Promise<{idToken: string, accessToken?: string, refreshToken?: string}>}
- */
+const poolData = {
+  UserPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
+  ClientId: import.meta.env.VITE_COGNITO_CLIENT_ID
+};
+
+const userPool = new CognitoUserPool(poolData);
+
 export async function login(username, password) {
-  const res = await fetch(`${import.meta.env.VITE_API_BASE}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password })
+  return new Promise((resolve, reject) => {
+    const authDetails = new AuthenticationDetails({ Username: username, Password: password });
+    const user = new CognitoUser({ Username: username, Pool: userPool });
+
+    user.authenticateUser(authDetails, {
+      onSuccess: (result) => {
+        const token = result.getIdToken().getJwtToken();
+        localStorage.setItem('id_token', token);
+        console.log('Login successful');
+        resolve(token);
+      },
+      onFailure: (err) => {
+        alert('Login failed: ' + err.message);
+        reject(err);
+      }
+    });
   });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || 'Login failed');
-  }
-
-  return res.json(); // Returns { idToken, accessToken, refreshToken, expiresIn }
 }
 
-/**
- * Sign up new user.
- * @param {string} username - Cognito username
- * @param {string} password - Cognito password
- * @param {string} email - User email
- */
-export async function signup(username, password, email) {
-  const res = await fetch(`${import.meta.env.VITE_API_BASE}/auth/signup`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password, email })
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || 'Signup failed');
-  }
-
-  return res.json(); // { message: 'Signup successful...' }
-}
-
-/**
- * Confirm sign up (email verification)
- * @param {string} username
- * @param {string} code - Confirmation code sent by email
- */
-export async function confirmSignup(username, code) {
-  const res = await fetch(`${import.meta.env.VITE_API_BASE}/auth/confirm`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, code })
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || 'Confirmation failed');
-  }
-
-  return res.json(); // { message: 'User confirmed.' }
+export function getToken() {
+  return localStorage.getItem('id_token');
 }
